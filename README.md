@@ -144,7 +144,3 @@ cyber-daily-digest/
 - Les quotas du palier gratuit de Gemini peuvent évoluer, il faut les vérifier régulièrement.
 - Les emails peuvent arriver en spam lors des premiers envois.
 - Le contenu est généré par un modèle de langage : se référer à la source originale pour toute décision de sécurité.
-
-## Licence
-
-Distribué sous licence MIT. Voir le fichier `LICENSE`.
