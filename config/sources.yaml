@@ -1,0 +1,29 @@
+# Sources et réglages du digest.
+feeds:
+  - name: CERT-FR
+    url: https://www.cert.ssi.gouv.fr/feed/
+  - name: CISA
+    url: https://www.cisa.gov/cybersecurity-advisories/all.xml
+  - name: BleepingComputer
+    url: https://www.bleepingcomputer.com/feed/
+  - name: The Hacker News
+    url: https://feeds.feedburner.com/TheHackersNews
+  - name: Krebs on Security
+    url: https://krebsonsecurity.com/feed/
+
+kev:
+  enabled: true
+  url: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json
+
+settings:
+  window_hours: 24          # ne garder que les articles publiés dans cette fenêtre
+  kev_window_days: 2        # le KEV n'a qu'une date (sans heure)
+  seen_retention_days: 30   # durée de mémoire des articles déjà vus
+  max_items: 60             # plafond d'articles envoyés à Gemini
+  words_min: 3000           # cible basse du digest
+  words_max: 6000           # cible haute du digest
+  batch_size: 15            # articles par appel Gemini
+  models:                   # essayés dans l'ordre (repli si quota épuisé)
+    - gemini-2.5-flash
+    - gemini-2.5-flash-lite
+  send_hour_paris: 8

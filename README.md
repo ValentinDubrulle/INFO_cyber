@@ -117,11 +117,16 @@ cyber-daily-digest/
 ├── config/
 │   └── sources.yaml       # RSS feeds and settings
 ├── digest/
+│   ├── models.py          # Item dataclass
+│   ├── render.py          # Markdown + HTML
 │   ├── collect.py         # Fetch RSS and CISA KEV
 │   ├── clean.py           # Deduplicate and filter
 │   ├── summarize.py       # Gemini summarization
 │   ├── deliver.py         # Email sending
 │   └── main.py            # Pipeline entry point
+├── data/seen.json         # Memory of processed articles
+├── digests/               # Markdown archive
+├── tests/
 ├── .env.example
 ├── requirements.txt
 └── README.md
@@ -131,16 +136,20 @@ cyber-daily-digest/
 
 ## Feuille de route
 
-- [ ] Collecte des flux RSS et du catalogue CISA KEV
-- [ ] Dédoublonnage et mémoire des articles déjà vus
-- [ ] Synthèse par thème avec Gemini
-- [ ] Envoi de l'email et mise en forme HTML
-- [ ] Workflow GitHub Actions quotidien
-- [ ] Archivage des digests au format Markdown
+- [x] Collecte des flux RSS et du catalogue CISA KEV
+- [x] Dédoublonnage et mémoire des articles déjà vus
+- [x] Synthèse par thème avec Gemini
+- [x] Envoi de l'email et mise en forme HTML
+- [x] Workflow GitHub Actions quotidien
+- [x] Archivage des digests au format Markdown
 - [ ] Notification Telegram courte avec les 3 points clés
 
 ## Limites connues
 
+- Non testé de bout en bout : la collecte réseau, l'appel Gemini et l'envoi SMTP n'ont pas pu être exécutés en développement. Lancer `python -m digest.main --dry-run` en local avec `.env` avant d'activer le cron.
+- Les modèles Gemini sont configurables dans `config/sources.yaml` (`models`, repli automatique). Les quotas gratuits varient beaucoup selon le modèle : vérifier https://ai.google.dev/gemini-api/docs/rate-limits.
+- Envoi à 8 h (Paris) : deux crons UTC et un garde-fou sur l'heure locale ; GitHub peut retarder le déclenchement de quelques minutes.
+- La longueur cible (3 000 à 6 000 mots) dépend du volume d'articles du jour ; un jour calme peut donner un digest plus court.
 - Les quotas du palier gratuit de Gemini peuvent évoluer, il faut les vérifier régulièrement.
 - Les emails peuvent arriver en spam lors des premiers envois.
 - Le contenu est généré par un modèle de langage : se référer à la source originale pour toute décision de sécurité.
