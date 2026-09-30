@@ -19,7 +19,7 @@ def norm_title(title: str) -> str:
 
 def load_seen(path: Path) -> dict[str, str]:
     try:
-        return json.loads(path.read_text())
+        return json.loads(path.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
 
@@ -28,7 +28,7 @@ def save_seen(path: Path, seen: dict[str, str], now: datetime, retention_days: i
     cutoff = (now - timedelta(days=retention_days)).isoformat()
     kept = {k: v for k, v in seen.items() if v >= cutoff}
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(kept, indent=0, sort_keys=True))
+    path.write_text(json.dumps(kept, indent=0, sort_keys=True), encoding="utf-8")
 
 
 def clean(items: list[Item], seen: dict[str, str], settings: dict, now: datetime) -> list[Item]:

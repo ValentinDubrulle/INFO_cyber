@@ -22,7 +22,7 @@ def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     load_dotenv(ROOT / ".env")
 
-    config = yaml.safe_load((ROOT / "config" / "sources.yaml").read_text())
+    config = yaml.safe_load((ROOT / "config" / "sources.yaml").read_text(encoding="utf-8"))
     settings = config["settings"]
     now = datetime.now(timezone.utc)
     seen_path = ROOT / "data" / "seen.json"
@@ -49,7 +49,7 @@ def main() -> int:
 
     archive = ROOT / "digests" / f"{day.isoformat()}.md"
     archive.parent.mkdir(exist_ok=True)
-    archive.write_text(md)
+    archive.write_text(md, encoding="utf-8")
     deliver.send_email(f"Digest cyber du {day.strftime('%d/%m/%Y')}", md, render.to_html(digest, day))
 
     # Mémoire mise à jour uniquement pour les éléments réellement résumés et envoyés.
