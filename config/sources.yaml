@@ -22,7 +22,7 @@ settings:
   max_items: 60             # plafond d'articles envoyés à Gemini
   words_min: 3000           # cible basse du digest
   words_max: 6000           # cible haute du digest
-  batch_size: 15            # articles par appel Gemini
+  batch_size: 8             # articles par appel Gemini
   models:                   # essayés dans l'ordre (repli si quota épuisé)
     - gemini-3.8-flash
     - gemini-3.5-flash-lite

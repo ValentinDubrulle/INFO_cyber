@@ -49,10 +49,18 @@ def call_gemini(prompt: str, models: list[str], api_key: str, max_tokens: int = 
         if model in _DEAD_MODELS:
             continue
         for attempt in range(2):
-            resp = requests.post(
-                API.format(model=model), json=body, timeout=180,
-                headers={"x-goog-api-key": api_key},
-            )
+            try:
+                resp = requests.post(
+                    API.format(model=model), json=body, timeout=90,
+                    headers={"x-goog-api-key": api_key},
+                )
+            except requests.RequestException as exc:  # délai dépassé, réseau coupé...
+                last = f"{model}: {type(exc).__name__}"
+                if attempt == 0:
+                    log.warning("%s — nouvel essai dans 10s", last)
+                    time.sleep(10)
+                    continue
+                break
             if resp.status_code == 200:
                 try:
                     return resp.json()["candidates"][0]["content"]["parts"][0]["text"]
