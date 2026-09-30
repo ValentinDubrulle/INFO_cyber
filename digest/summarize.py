@@ -27,6 +27,9 @@ SYSTEM = (
 )
 
 
+_DEAD_MODELS: set[str] = set()
+
+
 class GeminiError(RuntimeError):
     pass
 
@@ -43,7 +46,9 @@ def call_gemini(prompt: str, models: list[str], api_key: str, max_tokens: int = 
     }
     last = "aucun essai"
     for model in models:
-        for attempt in range(4):
+        if model in _DEAD_MODELS:
+            continue
+        for attempt in range(2):
             resp = requests.post(
                 API.format(model=model), json=body, timeout=180,
                 headers={"x-goog-api-key": api_key},
@@ -55,12 +60,12 @@ def call_gemini(prompt: str, models: list[str], api_key: str, max_tokens: int = 
                     last = f"{model}: réponse vide ({resp.text[:200]})"
                     break
             last = f"{model}: HTTP {resp.status_code} {resp.text[:200]}"
-            if resp.status_code in (429, 500, 503):
-                wait = 15 * (attempt + 1)
-                log.warning("%s — nouvel essai dans %ss", last, wait)
-                time.sleep(wait)
+            if resp.status_code in (500, 503) and attempt == 0:
+                log.warning("%s — nouvel essai dans 10s", last)
+                time.sleep(10)
                 continue
-            break  # erreur non récupérable pour ce modèle (400, 403, 404...)
+            break  # 429 (quota), 404, 400... : inutile d'insister sur ce modèle
+        _DEAD_MODELS.add(model)  # ne plus le solliciter pendant cette exécution
         log.warning("Bascule sur le modèle suivant après : %s", last)
     raise GeminiError(last)
 
