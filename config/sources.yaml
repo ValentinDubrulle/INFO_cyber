@@ -24,6 +24,6 @@ settings:
   words_max: 6000           # cible haute du digest
   batch_size: 15            # articles par appel Gemini
   models:                   # essayés dans l'ordre (repli si quota épuisé)
-    - gemini-2.5-flash
-    - gemini-2.5-flash-lite
+    - gemini-3.8-flash
+    - gemini-3.5-flash-lite
   send_hour_paris: 8
