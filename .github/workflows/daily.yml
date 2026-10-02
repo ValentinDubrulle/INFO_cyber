@@ -2,9 +2,9 @@ name: Daily cyber digest
 
 on:
   schedule:
-    # Deux créneaux UTC pour couvrir l'heure d'été/hiver ; le garde-fou ci-dessous ne laisse passer que 8 h à Paris.
-    - cron: "17 6 * * *"
-    - cron: "17 7 * * *"
+    # GitHub retarde souvent les crons (parfois de plusieurs heures) : on déclenche plusieurs fois
+    # (6 h à 9 h UTC). Le garde-fou ci-dessous n'envoie qu'un seul digest par jour, après 8 h à Paris.
+    - cron: "17 6-9 * * *"
   workflow_dispatch:
 
 permissions:
@@ -19,17 +19,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Vérifier l'heure locale (8 h Paris)
+      - uses: actions/checkout@v4
+      - name: Garde-fou (après 8 h Paris, un seul digest par jour)
         id: gate
         run: |
           hour=$(TZ=Europe/Paris date +%H)
-          if [ "${{ github.event_name }}" = "schedule" ] && [ "$hour" != "08" ]; then
+          today=$(TZ=Europe/Paris date +%F)
+          if [ "${{ github.event_name }}" = "schedule" ] && { [ $((10#$hour)) -lt 8 ] || [ -f "digests/$today.md" ]; }; then
             echo "run=false" >> "$GITHUB_OUTPUT"
           else
             echo "run=true" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/checkout@v4
-        if: steps.gate.outputs.run == 'true'
       - uses: actions/setup-python@v5
         if: steps.gate.outputs.run == 'true'
         with:
