@@ -15,6 +15,16 @@ ROOT = Path(__file__).resolve().parent.parent
 log = logging.getLogger("digest")
 
 
+def archive_path(folder: Path, day) -> Path:
+    """AAAA-MM-JJ.md, puis AAAA-MM-JJ-2.md, -3.md... pour les relances du même jour (rien n'est écrasé)."""
+    path = folder / f"{day.isoformat()}.md"
+    n = 2
+    while path.exists():
+        path = folder / f"{day.isoformat()}-{n}.md"
+        n += 1
+    return path
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="n'envoie rien et ne met pas à jour la mémoire")
@@ -47,7 +57,7 @@ def main() -> int:
         print(md)
         return 0
 
-    archive = ROOT / "digests" / f"{day.isoformat()}.md"
+    archive = archive_path(ROOT / "digests", day)
     archive.parent.mkdir(exist_ok=True)
     archive.write_text(md, encoding="utf-8")
     deliver.send_email(f"Digest cyber du {day.strftime('%d/%m/%Y')}", md, render.to_html(digest, day))
