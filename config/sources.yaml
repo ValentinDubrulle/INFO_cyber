@@ -23,7 +23,21 @@ settings:
   words_min: 3000           # cible basse du digest
   words_max: 6000           # cible haute du digest
   batch_size: 8             # articles par appel Gemini
-  models:                   # essayés dans l'ordre (repli si quota épuisé)
-    - gemini-3.8-flash
-    - gemini-3.5-flash-lite
+  # Fournisseurs de modèles, essayés dans l'ordre. Un fournisseur dont le secret est absent
+  # est ignoré ; si aucun ne répond, un digest de secours (titres + extraits + liens) est envoyé.
+  providers:
+    - name: Gemini
+      type: gemini
+      key_env: GEMINI_API_KEY
+      models: [gemini-3.8-flash, gemini-3.5-flash-lite]
+    - name: Mistral                      # palier gratuit "Experiment" : https://console.mistral.ai
+      type: openai
+      base_url: https://api.mistral.ai/v1
+      key_env: MISTRAL_API_KEY
+      models: [mistral-small-latest]
+    - name: Groq                         # palier gratuit : https://console.groq.com
+      type: openai
+      base_url: https://api.groq.com/openai/v1
+      key_env: GROQ_API_KEY
+      models: [openai/gpt-oss-120b, llama-3.3-70b-versatile]
   send_hour_paris: 8

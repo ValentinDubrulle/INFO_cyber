@@ -47,8 +47,11 @@ def main() -> int:
 
     digest = summarize.build_digest(items, settings)
     if not digest["count"]:
-        log.error("Aucune synthèse produite (Gemini indisponible ?)")
-        return 1
+        reason = summarize.failure_report()
+        log.error("Aucune synthèse produite : %s", reason)
+        # Annotation visible sur la page du run GitHub Actions.
+        print(f"::warning title=Digest envoyé sans résumé IA::{reason}")
+        digest = summarize.fallback_digest(items, reason)
 
     day = now.astimezone(ZoneInfo("Europe/Paris")).date()
     md = render.to_markdown(digest, day)
@@ -60,7 +63,10 @@ def main() -> int:
     archive = archive_path(ROOT / "digests", day)
     archive.parent.mkdir(exist_ok=True)
     archive.write_text(md, encoding="utf-8")
-    deliver.send_email(f"Digest cyber du {day.strftime('%d/%m/%Y')}", md, render.to_html(digest, day))
+    subject = f"Digest cyber du {day.strftime('%d/%m/%Y')}"
+    if digest.get("degraded"):
+        subject += " (version de secours, sans IA)"
+    deliver.send_email(subject, md, render.to_html(digest, day))
 
     # Mémoire mise à jour uniquement pour les éléments réellement résumés et envoyés.
     for idx in digest["summarized_ids"]:
