@@ -28,7 +28,7 @@ SYSTEM = (
 
 
 # Fournisseurs essayés dans l'ordre ; un fournisseur dont la clé est absente est ignoré.
-# "gemini" utilise l'API Google ; "openai" vise toute API compatible OpenAI (Mistral, Groq...).
+# "gemini" utilise l'API Google ; "openai" vise toute API compatible OpenAI (GitHub Models, Mistral, Groq...).
 DEFAULT_PROVIDERS = [{"name": "Gemini", "type": "gemini", "key_env": "GEMINI_API_KEY",
                       "models": ["gemini-3.8-flash", "gemini-3.5-flash-lite"]}]
 
@@ -89,7 +89,7 @@ def _request(provider: dict, model: str, prompt: str, max_tokens: int):
             "model": model,
             "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": prompt}],
             "temperature": 0.3,
-            "max_tokens": max_tokens,
+            "max_tokens": min(max_tokens, provider.get("max_tokens", max_tokens)),
         }
         resp = requests.post(provider["base_url"].rstrip("/") + "/chat/completions", json=body,
                              timeout=120, headers={"Authorization": f"Bearer {provider['key']}"})

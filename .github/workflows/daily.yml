@@ -9,6 +9,7 @@ on:
 
 permissions:
   contents: write
+  models: read  # GitHub Models, fournisseur LLM de secours sans clé
 
 concurrency:
   group: daily-digest
@@ -42,6 +43,7 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
