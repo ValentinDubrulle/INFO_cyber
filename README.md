@@ -149,7 +149,7 @@ cyber-daily-digest/
 ## Limites connues
 
 - Non testé de bout en bout : la collecte réseau, l'appel Gemini et l'envoi SMTP n'ont pas pu être exécutés en développement. Lancer `python -m digest.main --dry-run` en local avec `.env` avant d'activer le cron.
-- Les fournisseurs et modèles sont configurables dans `config/sources.yaml` (`providers`) : Gemini, puis GitHub Models (gratuit, via le `GITHUB_TOKEN` du workflow, aucun secret à créer), puis Mistral et Groq si leur clé est fournie. Si aucun ne répond, un digest de secours (titres, extraits, liens) est quand même envoyé et le run affiche un avertissement avec la cause (clé refusée, projet bloqué, quota...). Les quotas gratuits varient beaucoup selon le modèle : vérifier https://ai.google.dev/gemini-api/docs/rate-limits.
+- Les fournisseurs et modèles sont configurables dans `config/sources.yaml` (`providers`) : Gemini, puis Mistral et Groq si leur clé est fournie. Si aucun ne répond, un digest de secours (titres, extraits, liens) est quand même envoyé et le run affiche un avertissement avec la cause (clé refusée, projet bloqué, quota...). Les quotas gratuits varient beaucoup selon le modèle : vérifier https://ai.google.dev/gemini-api/docs/rate-limits.
 - Envoi à 8 h (Paris) : deux crons UTC et un garde-fou sur l'heure locale ; GitHub peut retarder le déclenchement de quelques minutes.
 - La longueur cible (3 000 à 6 000 mots) dépend du volume d'articles du jour ; un jour calme peut donner un digest plus court.
 - Les quotas du palier gratuit de Gemini peuvent évoluer, il faut les vérifier régulièrement.
