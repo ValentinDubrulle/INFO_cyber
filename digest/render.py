@@ -4,6 +4,9 @@ from html import escape
 
 from .summarize import CATEGORIES
 
+DEGRADED_NOTE = ("Version de secours : aucun modèle de langage n'a répondu, les articles sont listés "
+                 "sans résumé ni tri. Vérifier les clés API dans les secrets du dépôt.")
+
 
 def word_count(digest: dict) -> int:
     parts = list(digest["highlights"])
@@ -14,7 +17,10 @@ def word_count(digest: dict) -> int:
 
 
 def to_markdown(digest: dict, day: date) -> str:
-    out = [f"# Digest cybersécurité — {day.strftime('%d/%m/%Y')}", "", "## À retenir", ""]
+    out = [f"# Digest cybersécurité — {day.strftime('%d/%m/%Y')}", ""]
+    if digest.get("degraded"):
+        out += [f"> ⚠️ {DEGRADED_NOTE}", f"> Cause : {digest['degraded']}", ""]
+    out += ["## À retenir", ""]
     out += [f"- {h}" for h in digest["highlights"]] or ["- Rien de majeur aujourd'hui."]
     for cat, label in CATEGORIES.items():
         entries = digest["sections"][cat]
@@ -30,8 +36,11 @@ def to_markdown(digest: dict, day: date) -> str:
 
 def to_html(digest: dict, day: date) -> str:
     h = ['<div style="font-family:Arial,sans-serif;max-width:720px;margin:auto;color:#222;line-height:1.5">',
-         f'<h1 style="border-bottom:3px solid #c0392b;padding-bottom:6px">Digest cybersécurité — {day.strftime("%d/%m/%Y")}</h1>',
-         '<h2>À retenir</h2><ul>']
+         f'<h1 style="border-bottom:3px solid #c0392b;padding-bottom:6px">Digest cybersécurité — {day.strftime("%d/%m/%Y")}</h1>']
+    if digest.get("degraded"):
+        h.append('<div style="background:#fff3cd;border:1px solid #e0b100;padding:10px;border-radius:4px">'
+                 f'<b>⚠️ {escape(DEGRADED_NOTE)}</b><br><small>Cause : {escape(digest["degraded"])}</small></div>')
+    h.append('<h2>À retenir</h2><ul>')
     h += [f"<li>{escape(x)}</li>" for x in digest["highlights"]] or ["<li>Rien de majeur aujourd'hui.</li>"]
     h.append("</ul>")
     for cat, label in CATEGORIES.items():
