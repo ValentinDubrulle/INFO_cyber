@@ -91,8 +91,14 @@ def _request(provider: dict, model: str, prompt: str, max_tokens: int):
             "temperature": 0.3,
             "max_tokens": min(max_tokens, provider.get("max_tokens", max_tokens)),
         }
-        resp = requests.post(provider["base_url"].rstrip("/") + "/chat/completions", json=body,
-                             timeout=120, headers={"Authorization": f"Bearer {provider['key']}"})
+        url = provider["base_url"].rstrip("/") + "/chat/completions"
+        headers = {"Authorization": f"Bearer {provider['key']}", "Accept": "application/json"}
+        resp = requests.post(url, json=body, timeout=120, headers=headers, allow_redirects=False)
+        # Une redirection suivie par requests transformerait le POST en GET : on la rejoue en POST.
+        if resp.status_code in (301, 302, 303, 307, 308) and resp.headers.get("Location"):
+            url = requests.compat.urljoin(url, resp.headers["Location"])
+            log.info("%s redirige vers %s", provider["name"], url)
+            resp = requests.post(url, json=body, timeout=120, headers=headers, allow_redirects=False)
         extract = lambda d: d["choices"][0]["message"]["content"]  # noqa: E731
     return resp, extract
 
