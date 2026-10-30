@@ -36,6 +36,22 @@ _DEAD: set[str] = set()       # "fournisseur/modèle" à ne plus solliciter pend
 _FAILURES: dict[str, str] = {}  # fournisseur -> dernière erreur, pour le diagnostic final
 
 
+USAGE = {"entree": 0, "sortie": 0, "reflexion": 0, "appels": 0}
+
+
+def _count_usage(meta: dict) -> None:
+    USAGE["appels"] += 1
+    USAGE["entree"] += meta.get("promptTokenCount", 0)
+    USAGE["sortie"] += meta.get("candidatesTokenCount", 0)
+    USAGE["reflexion"] += meta.get("thoughtsTokenCount", 0)
+
+
+def usage_report() -> str:
+    u = USAGE
+    return (f"Consommation Gemini : {u['appels']} appels, {u['entree']} tokens en entrée, "
+            f"{u['sortie']} en sortie, {u['reflexion']} de réflexion")
+
+
 class LLMError(RuntimeError):
     pass
 
@@ -90,7 +106,9 @@ def _request(provider: dict, model: str, prompt: str, max_tokens: int):
             log.warning("%s refuse thinkingLevel, nouvel essai sans", model)
             del body["generationConfig"]["thinkingConfig"]
             resp = requests.post(API.format(model=model), json=body, timeout=90, headers=headers)
-        extract = lambda d: d["candidates"][0]["content"]["parts"][0]["text"]  # noqa: E731
+        def extract(d):
+            _count_usage(d.get("usageMetadata", {}))
+            return d["candidates"][0]["content"]["parts"][0]["text"]
     else:
         body = {
             "model": model,

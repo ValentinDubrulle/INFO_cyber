@@ -49,6 +49,7 @@ def main() -> int:
     items = items[:settings["max_items"]]
 
     digest = summarize.build_digest(items, settings)
+    log.info(summarize.usage_report())
     if not digest["count"]:
         reason = summarize.failure_report()
         log.error("Aucune synthèse produite : %s", reason)

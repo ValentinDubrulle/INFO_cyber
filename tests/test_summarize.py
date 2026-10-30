@@ -89,3 +89,13 @@ def test_gemini_sends_low_thinking_and_retries_without_if_refused(monkeypatch):
     assert summarize.call_llm("p", [provider]) == "[]"
     assert bodies[0]["thinkingConfig"] == {"thinkingLevel": "low"}
     assert "thinkingConfig" not in bodies[1]
+
+
+def test_gemini_usage_is_counted(monkeypatch):
+    for k in summarize.USAGE:
+        summarize.USAGE[k] = 0
+    payload = {"candidates": [{"content": {"parts": [{"text": "[]"}]}}],
+               "usageMetadata": {"promptTokenCount": 100, "candidatesTokenCount": 20, "thoughtsTokenCount": 5}}
+    monkeypatch.setattr(summarize.requests, "post", lambda url, **kw: FakeResp(200, payload))
+    summarize.call_llm("p", [{"name": "Gemini", "type": "gemini", "key": "k", "models": ["g"]}])
+    assert summarize.USAGE == {"entree": 100, "sortie": 20, "reflexion": 5, "appels": 1}
