@@ -22,7 +22,7 @@ settings:
   max_items: 60             # plafond d'articles envoyés à Gemini
   words_min: 3000           # cible basse du digest
   words_max: 6000           # cible haute du digest
-  batch_size: 8             # articles par appel Gemini
+  batch_size: 6             # articles par appel (GitHub Models limite l'entrée à ~8 000 tokens)
   # Fournisseurs de modèles, essayés dans l'ordre. Un fournisseur dont le secret est absent
   # est ignoré ; si aucun ne répond, un digest de secours (titres + extraits + liens) est envoyé.
   providers:
@@ -30,6 +30,12 @@ settings:
       type: gemini
       key_env: GEMINI_API_KEY
       models: [gemini-3.8-flash, gemini-3.5-flash-lite]
+    - name: GitHub Models                # gratuit, sans compte ni secret : utilise le GITHUB_TOKEN du workflow
+      type: openai
+      base_url: https://models.github.ai/inference
+      key_env: GITHUB_TOKEN
+      max_tokens: 4000                   # plafond de réponse du palier gratuit
+      models: [openai/gpt-4.1-mini, openai/gpt-4o-mini, openai/gpt-4.1]
     - name: Mistral                      # palier gratuit "Experiment" : https://console.mistral.ai
       type: openai
       base_url: https://api.mistral.ai/v1

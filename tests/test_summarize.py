@@ -9,6 +9,7 @@ from digest.models import Item
 class FakeResp:
     def __init__(self, status, payload=None, text=""):
         self.status_code, self._payload, self.text = status, payload, text
+        self.headers = {}
 
     def json(self):
         return self._payload

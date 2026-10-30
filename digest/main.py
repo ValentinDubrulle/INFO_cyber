@@ -28,12 +28,15 @@ def archive_path(folder: Path, day) -> Path:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="n'envoie rien et ne met pas à jour la mémoire")
+    ap.add_argument("--check-llm", action="store_true", help="teste chaque fournisseur LLM puis s'arrête")
     args = ap.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     load_dotenv(ROOT / ".env")
 
     config = yaml.safe_load((ROOT / "config" / "sources.yaml").read_text(encoding="utf-8"))
     settings = config["settings"]
+    if args.check_llm:
+        return summarize.check_providers(settings)
     now = datetime.now(timezone.utc)
     seen_path = ROOT / "data" / "seen.json"
     seen = clean.load_seen(seen_path)

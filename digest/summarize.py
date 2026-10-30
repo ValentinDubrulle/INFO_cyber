@@ -28,7 +28,7 @@ SYSTEM = (
 
 
 # Fournisseurs essayés dans l'ordre ; un fournisseur dont la clé est absente est ignoré.
-# "gemini" utilise l'API Google ; "openai" vise toute API compatible OpenAI (Mistral, Groq...).
+# "gemini" utilise l'API Google ; "openai" vise toute API compatible OpenAI (GitHub Models, Mistral, Groq...).
 DEFAULT_PROVIDERS = [{"name": "Gemini", "type": "gemini", "key_env": "GEMINI_API_KEY",
                       "models": ["gemini-3.8-flash", "gemini-3.5-flash-lite"]}]
 
@@ -89,10 +89,16 @@ def _request(provider: dict, model: str, prompt: str, max_tokens: int):
             "model": model,
             "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": prompt}],
             "temperature": 0.3,
-            "max_tokens": max_tokens,
+            "max_tokens": min(max_tokens, provider.get("max_tokens", max_tokens)),
         }
-        resp = requests.post(provider["base_url"].rstrip("/") + "/chat/completions", json=body,
-                             timeout=120, headers={"Authorization": f"Bearer {provider['key']}"})
+        url = provider["base_url"].rstrip("/") + "/chat/completions"
+        headers = {"Authorization": f"Bearer {provider['key']}", "Accept": "application/json"}
+        resp = requests.post(url, json=body, timeout=120, headers=headers, allow_redirects=False)
+        # Une redirection suivie par requests transformerait le POST en GET : on la rejoue en POST.
+        if resp.status_code in (301, 302, 303, 307, 308) and resp.headers.get("Location"):
+            url = requests.compat.urljoin(url, resp.headers["Location"])
+            log.info("%s redirige vers %s", provider["name"], url)
+            resp = requests.post(url, json=body, timeout=120, headers=headers, allow_redirects=False)
         extract = lambda d: d["choices"][0]["message"]["content"]  # noqa: E731
     return resp, extract
 
@@ -135,6 +141,21 @@ def call_llm(prompt: str, providers: list[dict], max_tokens: int = 8192) -> str:
             _FAILURES[provider["name"]] = last
             log.warning("Bascule sur le modèle suivant après : %s", last)
     raise LLMError(last)
+
+
+def check_providers(settings: dict) -> int:
+    """Envoie une requête minimale à chaque modèle configuré ; 0 si au moins un répond."""
+    ok = 0
+    for provider in active_providers(settings):
+        for model in provider["models"]:
+            try:
+                answer = call_llm('Réponds uniquement par le tableau JSON ["ok"].',
+                                  [{**provider, "models": [model]}], max_tokens=20)
+                log.info("OK %s/%s : %s", provider["name"], model, answer.strip()[:40])
+                ok += 1
+            except LLMError as exc:
+                log.error("KO %s", exc)
+    return 0 if ok else 1
 
 
 def failure_report() -> str:

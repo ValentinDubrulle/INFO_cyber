@@ -6,9 +6,15 @@ on:
     # (6 h à 9 h UTC). Le garde-fou ci-dessous n'envoie qu'un seul digest par jour, après 8 h à Paris.
     - cron: "17 6-9 * * *"
   workflow_dispatch:
+    inputs:
+      check_llm:
+        description: "Tester seulement les fournisseurs LLM (aucun email envoyé)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
+  models: read  # GitHub Models, fournisseur LLM de secours sans clé
 
 concurrency:
   group: daily-digest
@@ -42,12 +48,23 @@ jobs:
         if: steps.gate.outputs.run == 'true'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
-        run: python -m digest.main
+        run: python -m digest.main ${{ inputs.check_llm && '--check-llm' || '' }}
+      - name: DEBUG GitHub Models
+        if: always() && inputs.check_llm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for u in https://models.github.ai/inference/chat/completions "https://models.github.ai/orgs/ValentinDubrulle/inference/chat/completions"; do
+            echo "== $u"
+            curl -sS -i -X POST "$u" -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" -H "Content-Type: application/json" -d '{"model":"openai/gpt-4.1-mini","messages":[{"role":"user","content":"Say hi"}],"max_tokens":10}' | head -c 1500; echo
+          done
+          curl -sS https://models.github.ai/catalog/models -H "Authorization: Bearer $GITHUB_TOKEN" | head -c 600; echo
       - name: Sauvegarder la mémoire et l'archive
         if: steps.gate.outputs.run == 'true'
         run: |
