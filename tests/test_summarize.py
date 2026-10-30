@@ -73,3 +73,19 @@ def test_fallback_digest_lists_every_item():
     assert d["count"] == 2 and d["degraded"] == "cause"
     assert d["sections"]["vulnerabilites"][0]["kev"]
     assert d["sections"]["autres"][0]["resume"].endswith("…")
+
+
+def test_gemini_sends_low_thinking_and_retries_without_if_refused(monkeypatch):
+    bodies = []
+
+    def post(url, json=None, **kw):
+        bodies.append(dict(json["generationConfig"]))
+        if "thinkingConfig" in json["generationConfig"]:
+            return FakeResp(400, text="Unknown field thinkingConfig")
+        return FakeResp(200, {"candidates": [{"content": {"parts": [{"text": "[]"}]}}]})
+
+    monkeypatch.setattr(summarize.requests, "post", post)
+    provider = {"name": "Gemini", "type": "gemini", "key": "k", "models": ["g"], "thinking_level": "low"}
+    assert summarize.call_llm("p", [provider]) == "[]"
+    assert bodies[0]["thinkingConfig"] == {"thinkingLevel": "low"}
+    assert "thinkingConfig" not in bodies[1]

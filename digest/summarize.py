@@ -28,7 +28,7 @@ SYSTEM = (
 
 
 # Fournisseurs essayés dans l'ordre ; un fournisseur dont la clé est absente est ignoré.
-# "gemini" utilise l'API Google ; "openai" vise toute API compatible OpenAI (GitHub Models, Mistral, Groq...).
+# "gemini" utilise l'API Google ; "openai" vise toute API compatible OpenAI (Mistral, Groq...).
 DEFAULT_PROVIDERS = [{"name": "Gemini", "type": "gemini", "key_env": "GEMINI_API_KEY",
                       "models": ["gemini-3.8-flash", "gemini-3.5-flash-lite"]}]
 
@@ -81,8 +81,15 @@ def _request(provider: dict, model: str, prompt: str, max_tokens: int):
                 "maxOutputTokens": max_tokens,
             },
         }
-        resp = requests.post(API.format(model=model), json=body, timeout=90,
-                             headers={"x-goog-api-key": provider["key"]})
+        if provider.get("thinking_level"):
+            body["generationConfig"]["thinkingConfig"] = {"thinkingLevel": provider["thinking_level"]}
+        headers = {"x-goog-api-key": provider["key"]}
+        resp = requests.post(API.format(model=model), json=body, timeout=90, headers=headers)
+        # Modèle qui ne connaît pas ce réglage : on renvoie la requête sans lui plutôt que d'échouer.
+        if resp.status_code == 400 and "thinking" in resp.text.lower() and "thinkingConfig" in body["generationConfig"]:
+            log.warning("%s refuse thinkingLevel, nouvel essai sans", model)
+            del body["generationConfig"]["thinkingConfig"]
+            resp = requests.post(API.format(model=model), json=body, timeout=90, headers=headers)
         extract = lambda d: d["candidates"][0]["content"]["parts"][0]["text"]  # noqa: E731
     else:
         body = {
