@@ -137,6 +137,21 @@ def call_llm(prompt: str, providers: list[dict], max_tokens: int = 8192) -> str:
     raise LLMError(last)
 
 
+def check_providers(settings: dict) -> int:
+    """Envoie une requête minimale à chaque modèle configuré ; 0 si au moins un répond."""
+    ok = 0
+    for provider in active_providers(settings):
+        for model in provider["models"]:
+            try:
+                answer = call_llm('Réponds uniquement par le tableau JSON ["ok"].',
+                                  [{**provider, "models": [model]}], max_tokens=20)
+                log.info("OK %s/%s : %s", provider["name"], model, answer.strip()[:40])
+                ok += 1
+            except LLMError as exc:
+                log.error("KO %s", exc)
+    return 0 if ok else 1
+
+
 def failure_report() -> str:
     """Résumé lisible des erreurs rencontrées, par fournisseur."""
     return " ; ".join(_FAILURES.values()) or "aucun fournisseur configuré (secrets absents)"

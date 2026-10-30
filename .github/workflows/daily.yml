@@ -6,6 +6,11 @@ on:
     # (6 h à 9 h UTC). Le garde-fou ci-dessous n'envoie qu'un seul digest par jour, après 8 h à Paris.
     - cron: "17 6-9 * * *"
   workflow_dispatch:
+    inputs:
+      check_llm:
+        description: "Tester seulement les fournisseurs LLM (aucun email envoyé)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -49,7 +54,7 @@ jobs:
           GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
-        run: python -m digest.main
+        run: python -m digest.main ${{ inputs.check_llm && '--check-llm' || '' }}
       - name: Sauvegarder la mémoire et l'archive
         if: steps.gate.outputs.run == 'true'
         run: |
