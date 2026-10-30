@@ -56,7 +56,7 @@ jobs:
           RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
         run: python -m digest.main ${{ inputs.check_llm && '--check-llm' || '' }}
       - name: DEBUG GitHub Models
-        if: inputs.check_llm
+        if: always() && inputs.check_llm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
